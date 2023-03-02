@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Jade Delight</title>
+	<style>
+		/* beginning of added section */
+		/* aligns labels and input boxes for the name and address section */
+		.userInfo input {position: fixed; left: 100px}
+		/* end of added section */
+	</style>
+</head>
+
+<body>
+	<script>
+
+		function MenuItem(name, cost)
+		{
+			this.name = name;
+			this.cost=cost;
+		}
+
+		menuItems = new Array(
+			new MenuItem("Chicken Chop Suey", 5.5),
+			new MenuItem("Sweet and Sour Pork", 7.25),
+			new MenuItem("Shrimp Lo Mein", 6.80),
+			new MenuItem("Moo Shi Chicken", 9.50),
+			new MenuItem("Fried Rice", 3.25)
+		);
+
+		function makeSelect(name, minRange, maxRange)
+		{
+			var t= "";
+			t = "<select name='" + name + "' size='1'>";
+			for (j=minRange; j<=maxRange; j++)
+			t += "<option>" + j + "</option>";
+			t+= "</select>"; 
+			return t;
+		}
+
+		function td(content, className="")
+		{
+			return "<td class = '" + className + "'>" + content + "</td>";
+		}
+
+		//beginning of added section
+
+		//function called on when item number selected changed 
+		function buttonPress(index, value) {
+			var quantities = document.getElementsByClassName("selectQuantity");
+			var amount = parseInt((document.getElementsByName("quan" + index)[0]).value);
+			var price = menuItems[index].cost;
+
+			//updates total cost per item based on number selected
+			var total = amount * price;
+			(document.getElementsByName("cost")[index]).value = total.toFixed(2);
+			
+			updateSubtotalTaxTotal();
+		}
+
+		//updates subtotal, tax and total value displayed on screen based on user selection of numer of items
+		function updateSubtotalTaxTotal() {
+			let subtotal = 0.00;
+			for (let i=0; i < menuItems.length; i++) {
+				var itemTotal = (document.getElementsByName("cost")[i]).value;
+				subtotal = Number(subtotal) + Number(itemTotal);
+			}
+			(document.getElementById("subtotal")).value = subtotal.toFixed(2);
+
+			let tax = subtotal * 0.0625;
+			(document.getElementById("tax")).value = tax.toFixed(2);
+
+			let total = subtotal + tax;
+			(document.getElementById("total")).value = total.toFixed(2);
+		}
+
+		//shows the address and city box when the user chooses delivery
+		function showDelivery() {
+			let address = document.getElementsByClassName("userInfo address");
+			address[0].style = "display: block;";
+			address[1].style = "display: block;";
+		}
+
+		//hides the address and city box when the user chooses pickup
+		function hideDelivery() {
+			let address = document.getElementsByClassName("userInfo address");
+			address[0].style = "display: none;";
+			address[1].style = "display: none;";
+		}
+
+		//function called when submit is pressed, checks if all required fields are filled in and displays error message or order summary
+		function validate() {
+			let l_name = false;
+			let phone_num = false;
+			let item_ordered = false;
+			let delivery = false;
+			let street_check = false;
+			let city_check = false;
+			let invalid = false;
+			var street;
+			var city;
+
+			let lname = document.getElementsByTagName("input").lname.value;
+			let phone = document.getElementsByTagName("input").phone.value;
+
+			//checks to see if last name has been entered
+			if (lname != "") {
+				l_name = true;
+			}
+			
+			//counts number of numbers entered in the phone number section and makes sure there is either 7 or 10
+			let phone_length = 0;
+			for (let i = 0; i < phone.length; i++) {
+				if (phone[i] >= 0 && phone[i] <= 9) {
+					phone_length++;
+				}
+			}
+			if (phone_length == 7 || phone_length == 10) {
+				phone_num = true;
+			}
+
+			//checks to see if at least one item has been ordered
+			let quantities = document.getElementsByClassName("selectQuantity");
+			for (let i=0; i< menuItems.length; i++) {
+				let value = quantities[i].children[0].value;
+				if (value != 0) {
+					item_ordered = true;
+				}
+			}
+
+			//checks to see if the user wants delivery
+			if (document.getElementsByName("p_or_d")[1].checked) {
+				delivery = true;
+			}
+
+			//if user wants delivery, check additional required fields and say if valid or not
+			if (delivery) {
+				let street = document.getElementsByTagName("input").street.value;
+				let city = document.getElementsByTagName("input").city.value;
+				if (street != "") {
+					street_check = true;
+				}
+				if (city != "") {
+					city_check = true;
+				}
+				if (!(phone_num && item_ordered && l_name && city_check && street_check)) {
+					invalid = true;
+					alert("You have not completed all required fields. Please make sure you have entered a valid phone number, city, street, last name and that at least one item is ordered.");
+				}
+			} else if (!(phone_num && item_ordered && l_name)){ //checks fields needed for pickup and errors if necessary
+				invalid = true;
+				alert("You have not completed all required fields. Please make sure you have entered a valid phone number, last name and that at least one item is ordered.");
+			}
+
+			//if no error message has been displayed, call function to display order details in a new window
+			if (!invalid) {
+				alert("Thank you for your order!")
+				newPage = window.open(); //new window created and stored in variable
+				displayReceipt(newPage, delivery);
+			}
+		}
+
+		//takes in window to be outputted to and variable that tells if delivery has been selected and displays order details to the new window
+		function displayReceipt(newPage, delivery) {
+			newPage.document.write("<h1>ORDER DETAILS<h1>");
+
+			let subtotal = (document.getElementById("subtotal")).value
+			let tax = (document.getElementById("tax")).value;
+			let total = (document.getElementById("total")).value;
+			let quantities = document.getElementsByClassName("selectQuantity");
+
+			//display items ordered on page
+			newPage.document.write("<h2><i>Items Ordered</i><h2>");
+			for (let i=0; i< menuItems.length; i++) {
+				let value = quantities[i].children[0].value;
+				let name = menuItems[i].name;
+				if (value != 0) {
+					newPage.document.write("<h3><i>" + name + ": " + value + "</i></h3>");
+				}
+				
+			}
+
+			//display subtotal, tax and total on the page
+			newPage.document.write("<br>");
+			newPage.document.write("<h2>Subtotal " + subtotal + "</h2>");
+			newPage.document.write("<h2>Tax " + tax + "</h2>");
+			newPage.document.write("<h2>Total " + total + "</h2>");
+
+			//calculates delivery or pickup time and displays to window
+			d = new Date();
+			let hours = d.getHours();
+			let minutes = d.getMinutes();
+			if (delivery) {
+				if (minutes + 45 > 59) {
+					minutes = (minutes + 45) % 60;
+					if (hours == 23) {
+						hours = 0;
+					} else {
+						hours++;
+					}
+					
+				} else {
+					minutes = minutes + 45;
+				}
+				newPage.document.write("<h2><u>Your order will be delivered at " + hours + ":" + minutes + "</u></h2>");
+			} else {
+				if (minutes + 15 > 59) {
+					minutes = (minutes + 15) % 60;
+					if (hours == 23) {
+						hours = 0;
+					} else {
+						hours++;
+					}
+
+				} else {
+					minutes = minutes + 15;
+				}
+				newPage.document.write("<h2><u>Your order will be ready for pickup at " + hours + ":" + minutes + "</u></h2>");
+			}
+		}
+
+		//end of added section
+		
+	</script>
+
+	<h1>Jade Delight</h1>
+	<form>
+
+		<p class="userInfo"><label>First Name:</label> <input type="text"  name='fname' /></p>
+		<p class="userInfo"><label>Last Name*:</label>  <input type="text"  name='lname' /></p>
+		<p class="userInfo address"><label>Street*:</label> <input type="text" name='street' /></p>
+		<p class="userInfo address"><label>City*:</label> <input type="text" name='city' /></p>
+		<p class="userInfo"><label>Phone*:</label> <input type="text"  name='phone' /></p>
+		<p> 
+			<input type="radio"  name="p_or_d" value = "pickup" checked="checked"/>Pickup  
+			<input type="radio"  name='p_or_d' value = 'delivery'/>
+			Delivery
+		</p>
+		<table border="0" cellpadding="3">
+			<tr>
+				<th>Select Item</th>
+				<th>Item Name</th>
+				<th>Cost Each</th>
+				<th>Total Cost</th>
+			</tr>
+			<script>
+
+				var s = "";
+				for (i=0; i< menuItems.length; i++)
+				{
+					s += "<tr>";
+					s += td(makeSelect("quan" + i, 0, 10),"selectQuantity");
+					s += td(menuItems[i].name, "itemName");
+					s += td("$" +menuItems[i].cost.toFixed(2), "cost");
+					s += td("$<input type='text' name='cost'/>", "totalCost");
+					s+= "</tr>";
+				}
+				document.writeln(s);
+			</script>
+		</table>
+		<p class="subtotal totalSection"><label>Subtotal</label>: 
+		$ <input type="text"  name='subtotal' id="subtotal" />
+		</p>
+		<p class="tax totalSection"><label>Mass tax 6.25%:</label>
+		$ <input type="text"  name='tax' id="tax" />
+		</p>
+		<p class="total totalSection"><label>Total:</label> $ <input type="text"  name='total' id="total" />
+		</p>
+
+		<input type = "button" value = "Submit Order" />
+
+	</form>
+	<script>
+		//beginning of added section
+		let quantities = document.getElementsByClassName("selectQuantity");
+		for (let i=0; i< menuItems.length; i++) {
+			let value = quantities[i].children[0].value;
+			quantities[i].addEventListener("change", function() { buttonPress(i, value);}); 
+		}
+		let pickup = document.getElementsByName("p_or_d")[0];
+		let delivery = document.getElementsByName("p_or_d")[1];
+
+		pickup.addEventListener("change", function() { hideDelivery()});
+		delivery.addEventListener("change", function() { showDelivery()});
+
+		hideDelivery();
+
+		let submit = document.getElementsByTagName("input")[15];
+
+		submit.addEventListener("click", function() { validate(); });
+		//end of added section
+	</script>
+</body>
+</html>
